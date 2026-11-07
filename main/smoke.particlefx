@@ -1,0 +1,127 @@
+emitters {
+  id: "emitter"
+  mode: PLAY_MODE_LOOP
+  space: EMISSION_SPACE_WORLD
+  type: EMITTER_TYPE_2DCONE
+  max_particle_count: 64
+  material: "/builtins/materials/gui.material"
+  tile_source: "/builtins/graphics/particle_blob.tilesource"
+  animation: "anim"
+  blend_mode: BLEND_MODE_ALPHA
+  duration: 1.0
+  start_delay: 0.0
+  size_mode: SIZE_MODE_MANUAL
+  position {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  properties {
+    key: "PROPERTY_TYPE_SPAWN_RATE"
+    points {
+      x: 0.0
+      y: 6.0
+      t_x: 1.0
+      t_y: 0.0
+    }
+    spread: 1.0
+  }
+  properties {
+    key: "PROPERTY_TYPE_PARTICLE_LIFE_TIME"
+    points {
+      x: 0.0
+      y: 1.5
+      t_x: 1.0
+      t_y: 0.0
+    }
+    spread: 0.2
+  }
+  properties {
+    key: "PROPERTY_TYPE_INITIAL_SPEED"
+    points {
+      x: 0.0
+      y: 45.0
+      t_x: 1.0
+      t_y: 0.0
+    }
+    spread: 10.0
+  }
+  properties {
+    key: "PROPERTY_TYPE_INITIAL_SIZE"
+    points {
+      x: 0.0
+      y: 25.0
+      t_x: 1.0
+      t_y: 0.0
+    }
+    spread: 5.0
+  }
+  properties {
+    key: "PROPERTY_TYPE_EMITTER_SIZE_X"
+    points {
+      x: 0.0
+      y: 70.0
+      t_x: 1.0
+      t_y: 0.0
+    }
+    spread: 0.0
+  }
+  properties {
+    key: "PROPERTY_TYPE_EMITTER_SIZE_Y"
+    points {
+      x: 0.0
+      y: 15.0
+      t_x: 1.0
+      t_y: 0.0
+    }
+    spread: 0.0
+  }
+  particle_properties {
+    key: "PARTICLE_PROPERTY_TYPE_COLOR_R"
+    points {
+      x: 0.0
+      y: 0.9
+      t_x: 1.0
+      t_y: 0.0
+    }
+  }
+  particle_properties {
+    key: "PARTICLE_PROPERTY_TYPE_COLOR_G"
+    points {
+      x: 0.0
+      y: 0.9
+      t_x: 1.0
+      t_y: 0.0
+    }
+  }
+  particle_properties {
+    key: "PARTICLE_PROPERTY_TYPE_COLOR_B"
+    points {
+      x: 0.0
+      y: 0.9
+      t_x: 1.0
+      t_y: 0.0
+    }
+  }
+  particle_properties {
+    key: "PARTICLE_PROPERTY_TYPE_COLOR_A"
+    points {
+      x: 0.0
+      y: 0.45
+      t_x: 1.0
+      t_y: -0.45
+    }
+    points {
+      x: 1.0
+      y: 0.0
+      t_x: 1.0
+      t_y: 0.0
+    }
+  }
+}

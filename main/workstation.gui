@@ -1,0 +1,411 @@
+script: "/main/workstation.gui_script"
+fonts {
+  name: "default"
+  font: "/builtins/fonts/default.font"
+}
+particlefxs {
+  name: "smoke"
+  particlefx: "/main/smoke.particlefx"
+}
+nodes {
+  position { x: 640.0 y: 540.0 }
+  size { x: 1280.0 y: 360.0 }
+  color { x: 0.15 y: 0.17 z: 0.27 }
+  type: TYPE_BOX
+  id: "street_bg"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 640.0 y: 180.0 }
+  size { x: 1280.0 y: 360.0 }
+  color { x: 0.36 y: 0.25 z: 0.2 }
+  type: TYPE_BOX
+  id: "table_bg"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 640.0 y: 690.0 }
+  size { x: 1200.0 y: 40.0 }
+  color { x: 1.0 y: 0.84 z: 0.0 }
+  type: TYPE_TEXT
+  text: "[Ng\195\160y 1 - Ca S\195\161ng]"
+  font: "default"
+  id: "hud_info_text"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 640.0 y: 645.0 }
+  size { x: 1100.0 y: 36.0 }
+  type: TYPE_TEXT
+  text: "B\191\191p \196\145\195\163 \196\145\191\191 l\191\191a!"
+  font: "default"
+  id: "status_text"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 640.0 y: 450.0 }
+  size { x: 120.0 y: 180.0 }
+  color { x: 0.2 y: 0.6 z: 0.86 }
+  type: TYPE_BOX
+  id: "customer_box"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 640.0 y: 580.0 }
+  size { x: 680.0 y: 90.0 }
+  color { x: 0.98 y: 0.98 z: 0.98 }
+  type: TYPE_BOX
+  id: "dialogue_bg"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 650.0 y: 80.0 }
+  color { x: 0.1 y: 0.15 z: 0.2 }
+  type: TYPE_TEXT
+  text: "L\191\191i tho\191\161i kh\195\161ch h\195\160ng..."
+  line_break: true
+  font: "default"
+  id: "dialogue_text"
+  parent: "dialogue_bg"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 150.0 y: 260.0 }
+  size { x: 170.0 y: 85.0 }
+  color { x: 0.56 y: 0.27 z: 0.68 }
+  type: TYPE_BOX
+  id: "basket_potato"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 160.0 y: 75.0 }
+  type: TYPE_TEXT
+  text: "R\191\191 KHOAI M\191\186T\n(Click \196\145\191\183t l\195\170n v\191\191)"
+  line_break: true
+  font: "default"
+  id: "txt_basket_potato"
+  parent: "basket_potato"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 150.0 y: 145.0 }
+  size { x: 170.0 y: 85.0 }
+  color { x: 0.85 y: 0.65 z: 0.1 }
+  type: TYPE_BOX
+  id: "basket_corn"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 160.0 y: 75.0 }
+  type: TYPE_TEXT
+  text: "R\191\191 B\191\130P N\191\191P\n(Click \196\145\191\183t l\195\170n v\191\191)"
+  line_break: true
+  font: "default"
+  id: "txt_basket_corn"
+  parent: "basket_corn"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 1110.0 y: 200.0 }
+  size { x: 170.0 y: 105.0 }
+  color { x: 0.18 y: 0.55 z: 0.34 }
+  type: TYPE_BOX
+  id: "bowl_scallion"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 160.0 y: 95.0 }
+  type: TYPE_TEXT
+  text: "CH\195\137N M\191\161 H\195\128NH\n[Ch\192\176a m\191\191 kh\195\179a]"
+  line_break: true
+  font: "default"
+  id: "bowl_scallion_text"
+  parent: "bowl_scallion"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 640.0 y: 195.0 }
+  size { x: 540.0 y: 250.0 }
+  color { x: 0.5 y: 0.1 z: 0.1 }
+  type: TYPE_BOX
+  id: "grill_base"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 480.0 y: 250.0 }
+  size { x: 135.0 y: 90.0 }
+  color { x: 0.2 y: 0.2 z: 0.2 }
+  type: TYPE_BOX
+  id: "slot_1"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 130.0 y: 85.0 }
+  type: TYPE_TEXT
+  text: "\195\148 1\n[Tr\191\145ng]"
+  line_break: true
+  font: "default"
+  id: "slot_1_text"
+  parent: "slot_1"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 0.0 y: 15.0 }
+  type: TYPE_PARTICLEFX
+  id: "slot_1_smoke"
+  parent: "slot_1"
+  inherit_alpha: true
+  particlefx: "smoke"
+}
+nodes {
+  position { x: 640.0 y: 250.0 }
+  size { x: 135.0 y: 90.0 }
+  color { x: 0.2 y: 0.2 z: 0.2 }
+  type: TYPE_BOX
+  id: "slot_2"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 130.0 y: 85.0 }
+  type: TYPE_TEXT
+  text: "\195\148 2\n[Tr\191\145ng]"
+  line_break: true
+  font: "default"
+  id: "slot_2_text"
+  parent: "slot_2"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 0.0 y: 15.0 }
+  type: TYPE_PARTICLEFX
+  id: "slot_2_smoke"
+  parent: "slot_2"
+  inherit_alpha: true
+  particlefx: "smoke"
+}
+nodes {
+  position { x: 800.0 y: 250.0 }
+  size { x: 135.0 y: 90.0 }
+  color { x: 0.2 y: 0.2 z: 0.2 }
+  type: TYPE_BOX
+  id: "slot_3"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 130.0 y: 85.0 }
+  type: TYPE_TEXT
+  text: "\195\148 3\n[Tr\191\145ng]"
+  line_break: true
+  font: "default"
+  id: "slot_3_text"
+  parent: "slot_3"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 0.0 y: 15.0 }
+  type: TYPE_PARTICLEFX
+  id: "slot_3_smoke"
+  parent: "slot_3"
+  inherit_alpha: true
+  particlefx: "smoke"
+}
+nodes {
+  position { x: 480.0 y: 140.0 }
+  size { x: 135.0 y: 90.0 }
+  color { x: 0.2 y: 0.2 z: 0.2 }
+  type: TYPE_BOX
+  id: "slot_4"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 130.0 y: 85.0 }
+  type: TYPE_TEXT
+  text: "\195\148 4\n[Tr\191\145ng]"
+  line_break: true
+  font: "default"
+  id: "slot_4_text"
+  parent: "slot_4"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 0.0 y: 15.0 }
+  type: TYPE_PARTICLEFX
+  id: "slot_4_smoke"
+  parent: "slot_4"
+  inherit_alpha: true
+  particlefx: "smoke"
+}
+nodes {
+  position { x: 640.0 y: 140.0 }
+  size { x: 135.0 y: 90.0 }
+  color { x: 0.12 y: 0.12 z: 0.12 }
+  type: TYPE_BOX
+  id: "slot_5"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 130.0 y: 85.0 }
+  type: TYPE_TEXT
+  text: "\195\148 5\n[Kh\195\179a]"
+  line_break: true
+  font: "default"
+  id: "slot_5_text"
+  parent: "slot_5"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 0.0 y: 15.0 }
+  type: TYPE_PARTICLEFX
+  id: "slot_5_smoke"
+  parent: "slot_5"
+  inherit_alpha: true
+  particlefx: "smoke"
+}
+nodes {
+  position { x: 800.0 y: 140.0 }
+  size { x: 135.0 y: 90.0 }
+  color { x: 0.12 y: 0.12 z: 0.12 }
+  type: TYPE_BOX
+  id: "slot_6"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 130.0 y: 85.0 }
+  type: TYPE_TEXT
+  text: "\195\148 6\n[Kh\195\179a]"
+  line_break: true
+  font: "default"
+  id: "slot_6_text"
+  parent: "slot_6"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 0.0 y: 15.0 }
+  type: TYPE_PARTICLEFX
+  id: "slot_6_smoke"
+  parent: "slot_6"
+  inherit_alpha: true
+  particlefx: "smoke"
+}
+nodes {
+  position { x: 640.0 y: 40.0 }
+  size { x: 280.0 y: 56.0 }
+  color { x: 0.63 y: 0.32 z: 0.18 }
+  type: TYPE_BOX
+  id: "warming_tray"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 270.0 y: 50.0 }
+  type: TYPE_TEXT
+  text: "Khay Gi\191\176 \191\148m: [Tr\191\145ng]"
+  line_break: true
+  font: "default"
+  id: "warming_text"
+  parent: "warming_tray"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 640.0 y: 360.0 }
+  size { x: 760.0 y: 520.0 }
+  color { x: 0.17 y: 0.12 z: 0.1 }
+  type: TYPE_BOX
+  id: "summary_popup"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 0.0 y: 210.0 }
+  size { x: 700.0 y: 40.0 }
+  color { x: 0.95 y: 0.77 z: 0.06 }
+  type: TYPE_TEXT
+  text: "T\191\149NG K\191\191T CA B\195\129N H\195\128NG"
+  font: "default"
+  id: "summary_title"
+  parent: "summary_popup"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 0.0 y: 125.0 }
+  size { x: 680.0 y: 110.0 }
+  type: TYPE_TEXT
+  text: "Th\191\145ng k\195\170 doanh thu..."
+  line_break: true
+  font: "default"
+  id: "summary_stats"
+  parent: "summary_popup"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 0.0 y: 25.0 }
+  size { x: 620.0 y: 55.0 }
+  color { x: 0.15 y: 0.68 z: 0.38 }
+  type: TYPE_BOX
+  id: "btn_buy_slot5"
+  parent: "summary_popup"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 600.0 y: 40.0 }
+  type: TYPE_TEXT
+  text: "M\191\191 r\191\153ng V\191\191 N\191\176\191\155ng (\195\148 s\191\145 5)"
+  font: "default"
+  id: "txt_buy_slot5"
+  parent: "btn_buy_slot5"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 0.0 y: -45.0 }
+  size { x: 620.0 y: 55.0 }
+  color { x: 0.15 y: 0.68 z: 0.38 }
+  type: TYPE_BOX
+  id: "btn_buy_slot6"
+  parent: "summary_popup"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 600.0 y: 40.0 }
+  type: TYPE_TEXT
+  text: "N\195\162ng c\191\165p V\191\191 N\191\176\191\155ng T\191\145i \196\144a (\195\148 s\191\145 6)"
+  font: "default"
+  id: "txt_buy_slot6"
+  parent: "btn_buy_slot6"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 0.0 y: -115.0 }
+  size { x: 620.0 y: 55.0 }
+  color { x: 0.15 y: 0.68 z: 0.38 }
+  type: TYPE_BOX
+  id: "btn_buy_scallion"
+  parent: "summary_popup"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 600.0 y: 40.0 }
+  type: TYPE_TEXT
+  text: "C\195\180ng th\191\176c: B\191\130p N\191\176\191\155ng M\191\161 H\195\160nh"
+  font: "default"
+  id: "txt_buy_scallion"
+  parent: "btn_buy_scallion"
+  inherit_alpha: true
+}
+nodes {
+  position { x: 0.0 y: -200.0 }
+  size { x: 340.0 y: 60.0 }
+  color { x: 0.9 y: 0.49 z: 0.13 }
+  type: TYPE_BOX
+  id: "btn_next_shift"
+  parent: "summary_popup"
+  inherit_alpha: true
+}
+nodes {
+  size { x: 320.0 y: 40.0 }
+  type: TYPE_TEXT
+  text: "Qua Ca Ti\191\191p Theo >>"
+  font: "default"
+  id: "txt_next_shift"
+  parent: "btn_next_shift"
+  inherit_alpha: true
+}
+material: "/builtins/materials/gui.material"
+adjust_reference: ADJUST_REFERENCE_PARENT

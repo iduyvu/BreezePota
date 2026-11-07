@@ -1,0 +1,27 @@
+[bootstrap]
+main_collection = /main/main.collectionc
+
+[script]
+shared_state = 1
+
+[display]
+width = 1280
+height = 720
+high_dpi = 1
+
+[android]
+input_method = HiddenInputField
+
+[project]
+title = Cozy Street Grill
+version = 1.0.0
+
+[html5]
+scale_mode = fit
+show_fullscreen_button = 0
+show_made_with_defold = 0
+cssfile = /builtins/manifests/web/dark_theme.css
+
+[input]
+game_binding = /input/game.input_bindingc
+use_accelerometer = 0
