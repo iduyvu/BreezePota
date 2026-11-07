@@ -1,0 +1,432 @@
+local ItemsCatalog = require("main.data.items_catalog")
+local ShiftsConfig = require("main.data.shifts_config")
+local CustomersCatalog = require("main.data.customers_catalog")
+local ShopCatalog = require("main.data.shop_catalog")
+local GrillState = require("main.state.grill_state")
+local ShiftState = require("main.state.shift_state")
+local SaveManager = require("main.state.save_manager")
+local ShopManager = require("main.state.shop_manager")
+local ok_audio, AudioManager = pcall(require, "main.state.audio_manager")
+
+local COLORS = {
+    EMPTY        = vmath.vector4(0.2, 0.2, 0.2, 1.0),
+    LOCKED       = vmath.vector4(0.12, 0.12, 0.12, 0.6),
+    RAW          = vmath.vector4(0.4, 0.7, 0.3, 1.0),
+    WARM         = vmath.vector4(0.9, 0.8, 0.2, 1.0),
+    SWEET_SPOT   = vmath.vector4(1.0, 0.45, 0.0, 1.0),
+    CHARRED      = vmath.vector4(0.15, 0.1, 0.1, 1.0),
+    MORNING_BG   = vmath.vector4(0.55, 0.68, 0.78, 1.0),
+    NIGHT_BG     = vmath.vector4(0.15, 0.17, 0.27, 1.0),
+    BTN_BUYABLE  = vmath.vector4(0.15, 0.68, 0.38, 1.0),
+    BTN_DISABLED = vmath.vector4(0.35, 0.35, 0.35, 1.0),
+    BOWL_ACTIVE  = vmath.vector4(0.18, 0.65, 0.34, 1.0)
+}
+
+-- Hàm gọi âm thanh an toàn (Không báo lỗi nếu chưa gắn file .ogg/.wav vào sound_bank)
+local function safe_audio(method_name, ...)
+    if ok_audio and AudioManager and AudioManager[method_name] then
+        pcall(AudioManager[method_name], ...)
+    end
+end
+
+-- 1. Cập nhật HUD, Màu nền Sáng/Tối và Trạng thái Chén Mỡ Hành
+local function refresh_hud_and_theme(self)
+    local st = ShiftState.current_shift
+    local cfg = ShiftsConfig.SHIFTS[st.shift_type]
+    local wallet = SaveManager.save_data.player_money
+
+    local hud_str = string.format(
+        "[Ngày %d - %s]  |  Khách: %d/%d  |  Doanh thu ca: %d đ  |  Tổng ví: %d đ",
+        st.day_number, cfg.name, st.customers_served, cfg.target_customers, st.shift_revenue, wallet
+    )
+    gui.set_text(self.hud_info_text, hud_str)
+
+    if st.shift_type == ShiftsConfig.SHIFT_TYPES.MORNING then
+        gui.set_color(self.street_bg, COLORS.MORNING_BG)
+    else
+        gui.set_color(self.street_bg, COLORS.NIGHT_BG)
+    end
+
+    -- Cập nhật hiển thị Chén Mỡ Hành theo trạng thái đã mua trong Shop hay chưa
+    if SaveManager.is_item_unlocked("corn_scallion") then
+        gui.set_color(self.bowl_scallion, COLORS.BOWL_ACTIVE)
+        gui.set_text(self.bowl_scallion_text, "CHÉN MỠ HÀNH\n(Click quết Bắp Mặt B)")
+    else
+        gui.set_color(self.bowl_scallion, COLORS.BTN_DISABLED)
+        gui.set_text(self.bowl_scallion_text, "CHÉN MỠ HÀNH\n🔒 [Mở ở Shop]")
+    end
+
+    safe_audio("play_shift_bgm", st.shift_type)
+end
+
+-- 2. Cập nhật Khách hàng & Bong bóng hội thoại
+local function refresh_customer_ui(self)
+    local st = ShiftState.current_shift
+    local cust = st.active_customer
+
+    if not cust or st.status == ShiftState.SESSION_STATUS.WAITING_NEXT_CUSTOMER
+                or st.status == ShiftState.SESSION_STATUS.SHIFT_ENDED then
+        gui.set_enabled(self.customer_box, false)
+        gui.set_enabled(self.dialogue_bg, false)
+        return
+    end
+
+    gui.set_enabled(self.customer_box, true)
+    gui.set_enabled(self.dialogue_bg, true)
+
+    local arch = CustomersCatalog.ARCHETYPES[cust.archetype_id]
+    local wanted_item = ItemsCatalog.ITEMS[cust.wanted_item_id]
+
+    if st.status == ShiftState.SESSION_STATUS.CUSTOMER_ORDERING then
+        local text = string.format("%s: \"%s\"\n-> [Muốn mua: %s]", arch.name, cust.current_dialogue, wanted_item.name)
+        gui.set_text(self.dialogue_text, text)
+    elseif st.status == ShiftState.SESSION_STATUS.CUSTOMER_LEAVING then
+        local text = string.format("%s: \"%s\"", arch.name, cust.current_dialogue)
+        gui.set_text(self.dialogue_text, text)
+    end
+end
+
+-- 3. Cập nhật Khay Giữ Ấm
+local function refresh_warming_tray_ui(self)
+    if self.warming_item then
+        local item_cfg = ItemsCatalog.ITEMS[self.warming_item.item_id]
+        local tag = self.warming_item.is_perfect and " (Hoàn hảo *)" or ""
+        gui.set_text(self.warming_text, "Khay ấm: " .. item_cfg.name .. tag .. "\n(Click để giao khách)")
+    else
+        gui.set_text(self.warming_text, "Khay Giữ Ấm: [Trống]")
+    end
+end
+
+-- 4. Cập nhật nội dung Popup Tổng kết & Cửa hàng
+local function refresh_summary_popup_ui(self)
+    local st = ShiftState.current_shift
+    local cfg = ShiftsConfig.SHIFTS[st.shift_type]
+    local wallet = SaveManager.save_data.player_money
+
+    gui.set_text(self.summary_title, "TỔNG KẾT " .. string.upper(cfg.name))
+
+    local stats_str = string.format(
+        "- Khách đã phục vụ: %d người (Món nướng Hoàn Hảo: %d)\n" ..
+        "- Doanh thu trong ca: +%d đ\n" ..
+        "- Tổng tiền trong ví hiện tại: %d đ",
+        st.customers_served, st.perfect_count, st.shift_revenue, wallet
+    )
+    gui.set_text(self.summary_stats, stats_str)
+
+    for _, btn_info in ipairs(self.shop_buttons) do
+        local upg = ShopCatalog.ITEMS[btn_info.id]
+        local owned = ShopManager.is_upgrade_purchased(btn_info.id)
+
+        if owned then
+            gui.set_text(btn_info.txt, "[ĐÃ SỞ HỮU] " .. upg.name)
+            gui.set_color(btn_info.box, COLORS.BTN_DISABLED)
+        else
+            gui.set_text(btn_info.txt, string.format("MUA: %s — Giá: %d đ", upg.name, upg.cost))
+            if wallet >= upg.cost then
+                gui.set_color(btn_info.box, COLORS.BTN_BUYABLE)
+            else
+                gui.set_color(btn_info.box, COLORS.BTN_DISABLED)
+            end
+        end
+    end
+
+    if st.shift_type == ShiftsConfig.SHIFT_TYPES.MORNING then
+        gui.set_text(self.txt_next_shift, "Bắt đầu Ca Đêm >>")
+    else
+        gui.set_text(self.txt_next_shift, "Sang Ngày " .. (st.day_number + 1) .. " >>")
+    end
+end
+
+local function open_summary_popup(self)
+    SaveManager.add_money(ShiftState.current_shift.shift_revenue)
+    SaveManager.save_game()
+
+    refresh_hud_and_theme(self)
+    refresh_summary_popup_ui(self)
+
+    gui.set_enabled(self.summary_popup, true)
+    gui.set_position(self.summary_popup, vmath.vector3(640, 850, 0))
+    gui.animate(self.summary_popup, gui.PROP_POSITION, vmath.vector3(640, 360, 0), gui.EASING_OUTBACK, 0.4)
+end
+
+local function try_serve_or_store(self, finished_product, from_warming_tray)
+    local res = ShiftState.serve_active_customer(finished_product)
+
+    if res.success then
+        safe_audio("play_coin")
+        local tip_msg = res.quick_tip and " (+Thưởng Nhanh Ca Sáng!)" or ""
+        gui.set_text(self.status_text, string.format("Đã bán thành công! Thu về +%d đ%s", res.earned, tip_msg))
+
+        self.leaving_timer = 2.0
+        gui.set_scale(self.customer_box, vmath.vector3(1.15, 1.15, 1))
+        gui.animate(self.customer_box, gui.PROP_SCALE, vmath.vector3(1, 1, 1), gui.EASING_OUTBACK, 0.3)
+
+        if from_warming_tray then
+            self.warming_item = nil
+            refresh_warming_tray_ui(self)
+        end
+        refresh_hud_and_theme(self)
+        refresh_customer_ui(self)
+        return true
+    else
+        if not from_warming_tray then
+            self.warming_item = finished_product
+            refresh_warming_tray_ui(self)
+            local item_name = ItemsCatalog.ITEMS[finished_product.item_id].name
+            gui.set_text(self.status_text, "Chưa khớp món khách gọi -> Đã cất [" .. item_name .. "] xuống Khay Giữ Ấm!")
+        else
+            gui.set_text(self.status_text, "Khách hiện tại không gọi món trong Khay Giữ Ấm!")
+        end
+        return false
+    end
+end
+
+function init(self)
+    msg.post(".", "acquire_input_focus")
+    math.randomseed(os.time())
+
+    local save = SaveManager.load_game()
+    if not save.max_grill_slots then save.max_grill_slots = 4 end
+
+    self.street_bg          = gui.get_node("street_bg")
+    self.hud_info_text      = gui.get_node("hud_info_text")
+    self.status_text        = gui.get_node("status_text")
+    self.customer_box       = gui.get_node("customer_box")
+    self.dialogue_bg        = gui.get_node("dialogue_bg")
+    self.dialogue_text      = gui.get_node("dialogue_text")
+    self.warming_tray       = gui.get_node("warming_tray")
+    self.warming_text       = gui.get_node("warming_text")
+    self.basket_potato      = gui.get_node("basket_potato")
+    self.basket_corn        = gui.get_node("basket_corn")
+    self.bowl_scallion      = gui.get_node("bowl_scallion")
+    self.bowl_scallion_text = gui.get_node("bowl_scallion_text")
+
+    self.slot_nodes, self.slot_texts, self.slot_smokes, self.smoke_playing = {}, {}, {}, {}
+    for i = 1, 6 do
+        self.slot_nodes[i]    = gui.get_node("slot_" .. i)
+        self.slot_texts[i]    = gui.get_node("slot_" .. i .. "_text")
+        self.slot_smokes[i]   = gui.get_node("slot_" .. i .. "_smoke")
+        self.smoke_playing[i] = false
+    end
+
+    self.summary_popup  = gui.get_node("summary_popup")
+    self.summary_title  = gui.get_node("summary_title")
+    self.summary_stats  = gui.get_node("summary_stats")
+    self.btn_next_shift = gui.get_node("btn_next_shift")
+    self.txt_next_shift = gui.get_node("txt_next_shift")
+
+    self.shop_buttons = {
+        { id = "upgrade_slot_5",        box = gui.get_node("btn_buy_slot5"),    txt = gui.get_node("txt_buy_slot5") },
+        { id = "upgrade_slot_6",        box = gui.get_node("btn_buy_slot6"),    txt = gui.get_node("txt_buy_slot6") },
+        { id = "upgrade_corn_scallion", box = gui.get_node("btn_buy_scallion"), txt = gui.get_node("txt_buy_scallion") }
+    }
+
+    gui.set_enabled(self.summary_popup, false)
+    self.warming_item = nil
+    self.leaving_timer = 0
+
+    GrillState.init_grill(save.max_grill_slots)
+    ShiftState.start_shift(save.current_day, ShiftsConfig.SHIFT_TYPES.MORNING)
+
+    refresh_hud_and_theme(self)
+    refresh_customer_ui(self)
+    refresh_warming_tray_ui(self)
+    gui.set_text(self.status_text, "Bắt đầu Ngày " .. save.current_day .. "! Click Rổ Khoai hoặc Bắp để nhóm bếp.")
+end
+
+local function place_in_first_empty_slot(self, item_id)
+    for i = 1, GrillState.grill.max_slots do
+        if GrillState.place_item(i, item_id) then
+            safe_audio("play_sizzle", false)
+            local item_name = ItemsCatalog.ITEMS[item_id].name
+            gui.set_text(self.status_text, "Đã đặt " .. item_name .. " lên Ô số " .. i .. " (Mặt A)")
+            return
+        end
+    end
+    gui.set_text(self.status_text, "Tất cả các ô đã mở khóa đều đang kín chỗ!")
+end
+
+function update(self, dt)
+    GrillState.update_grill(dt)
+    local unlocked_slots = GrillState.grill.max_slots
+
+    for i = 1, 6 do
+        local node = self.slot_nodes[i]
+        local txt_node = self.slot_texts[i]
+        local smoke_node = self.slot_smokes[i]
+
+        if i > unlocked_slots then
+            gui.set_color(node, COLORS.LOCKED)
+            gui.set_text(txt_node, "Ô " .. i .. "\n[Khóa]")
+            if self.smoke_playing[i] then
+                gui.stop_particlefx(smoke_node)
+                self.smoke_playing[i] = false
+            end
+        else
+            local slot = GrillState.grill.slots[i]
+            if slot.status == GrillState.SLOT_STATUS.EMPTY then
+                gui.set_color(node, COLORS.EMPTY)
+                gui.set_text(txt_node, "Ô " .. i .. "\n[Trống]")
+                if self.smoke_playing[i] then
+                    gui.stop_particlefx(smoke_node)
+                    self.smoke_playing[i] = false
+                end
+            else
+                local cfg = ItemsCatalog.ITEMS[slot.item_id]
+                local is_side_a = (slot.status == GrillState.SLOT_STATUS.COOKING_SIDE_A)
+                local p = is_side_a and slot.side_a.progress or slot.side_b.progress
+                local side_label = is_side_a and "Mặt A" or "Mặt B"
+                local action_hint = ""
+
+                if p < cfg.thresholds.warm then
+                    gui.set_color(node, COLORS.RAW)
+                    action_hint = string.format("(%d%%)", math.floor(p * 100))
+                elseif p >= cfg.thresholds.sweet_spot_min and p <= cfg.thresholds.sweet_spot_max then
+                    gui.set_color(node, COLORS.SWEET_SPOT)
+                    action_hint = is_side_a and "[LẬT NGAY!]" or "[GẮP RA!]"
+                elseif p > cfg.thresholds.charred then
+                    gui.set_color(node, COLORS.CHARRED)
+                    action_hint = "[Hơi xém]"
+                else
+                    gui.set_color(node, COLORS.WARM)
+                    action_hint = string.format("(%d%%)", math.floor(p * 100))
+                end
+
+                gui.set_text(txt_node, string.format("%s\n%s %s", cfg.name, side_label, action_hint))
+
+                if p >= cfg.thresholds.warm and not self.smoke_playing[i] then
+                    gui.play_particlefx(smoke_node)
+                    self.smoke_playing[i] = true
+                end
+            end
+        end
+    end
+
+    local st = ShiftState.current_shift
+    local shift_cfg = ShiftsConfig.SHIFTS[st.shift_type]
+
+    if st.status == ShiftState.SESSION_STATUS.WAITING_NEXT_CUSTOMER then
+        st.spawn_timer = st.spawn_timer - dt
+        if st.spawn_timer <= 0 then
+            ShiftState.spawn_customer()
+            gui.set_position(self.customer_box, vmath.vector3(450, 450, 0))
+            gui.animate(self.customer_box, gui.PROP_POSITION, vmath.vector3(640, 450, 0), gui.EASING_OUTQUAD, 0.35)
+            refresh_customer_ui(self)
+        end
+    elseif st.status == ShiftState.SESSION_STATUS.CUSTOMER_ORDERING then
+        st.active_customer.wait_time = st.active_customer.wait_time + dt
+    elseif st.status == ShiftState.SESSION_STATUS.CUSTOMER_LEAVING then
+        self.leaving_timer = self.leaving_timer - dt
+        if self.leaving_timer <= 0 then
+            if st.customers_served >= shift_cfg.target_customers then
+                st.status = ShiftState.SESSION_STATUS.SHIFT_ENDED
+                refresh_customer_ui(self)
+                open_summary_popup(self)
+            else
+                st.status = ShiftState.SESSION_STATUS.WAITING_NEXT_CUSTOMER
+                st.spawn_timer = math.random() * (shift_cfg.spawn_delay_max - shift_cfg.spawn_delay_min) + shift_cfg.spawn_delay_min
+                refresh_customer_ui(self)
+            end
+        end
+    end
+end
+
+function on_input(self, action_id, action)
+    if action_id == hash("touch") and action.pressed then
+        safe_audio("unlock_web_audio")
+        local st = ShiftState.current_shift
+
+        -- TRƯỜNG HỢP A: Đang mở Popup Tổng kết & Shop
+        if st.status == ShiftState.SESSION_STATUS.SHIFT_ENDED then
+            for _, btn_info in ipairs(self.shop_buttons) do
+                if gui.pick_node(btn_info.box, action.x, action.y) then
+                    local res = ShopManager.buy_upgrade(btn_info.id)
+                    if res.success then
+                        safe_audio("play_coin")
+                        GrillState.init_grill(SaveManager.save_data.max_grill_slots)
+                        gui.set_text(self.status_text, "Mua nâng cấp thành công! Đã tự động lưu vào trình duyệt.")
+                        gui.set_scale(btn_info.box, vmath.vector3(1.08, 1.08, 1))
+                        gui.animate(btn_info.box, gui.PROP_SCALE, vmath.vector3(1, 1, 1), gui.EASING_OUTBACK, 0.25)
+                        refresh_hud_and_theme(self)
+                        refresh_summary_popup_ui(self)
+                    elseif res.reason == "ALREADY_OWNED" then
+                        gui.set_text(self.status_text, "Bạn đã sở hữu nâng cấp này rồi!")
+                    elseif res.reason == "NOT_ENOUGH_MONEY" then
+                        gui.set_text(self.status_text, "Chưa đủ tiền trong ví! Hãy bán thêm vài ca nữa nhé.")
+                    end
+                    return true
+                end
+            end
+
+            if gui.pick_node(self.btn_next_shift, action.x, action.y) then
+                gui.set_enabled(self.summary_popup, false)
+                GrillState.init_grill(SaveManager.save_data.max_grill_slots)
+
+                if st.shift_type == ShiftsConfig.SHIFT_TYPES.MORNING then
+                    ShiftState.start_shift(st.day_number, ShiftsConfig.SHIFT_TYPES.NIGHT)
+                    gui.set_text(self.status_text, "Đã lên đèn Ca Đêm! Thưởng nướng Hoàn Hảo x1.5!")
+                else
+                    SaveManager.advance_to_next_day()
+                    ShiftState.start_shift(SaveManager.save_data.current_day, ShiftsConfig.SHIFT_TYPES.MORNING)
+                    gui.set_text(self.status_text, "Chào buổi sáng Ngày " .. SaveManager.save_data.current_day .. "!")
+                end
+                refresh_hud_and_theme(self)
+                refresh_customer_ui(self)
+                return true
+            end
+            return true
+        end
+
+        -- TRƯỜNG HỢP B: Đang trong ca bán hàng
+        -- 1. Click Rổ Khoai / Rổ Bắp
+        if gui.pick_node(self.basket_potato, action.x, action.y) then
+            place_in_first_empty_slot(self, "sweet_potato_honey")
+            return true
+        elseif gui.pick_node(self.basket_corn, action.x, action.y) then
+            place_in_first_empty_slot(self, "corn_glutinous")
+            return true
+        end
+
+        -- 2. Click Chén Mỡ Hành để quết lên Bắp đang ở Mặt B
+        if gui.pick_node(self.bowl_scallion, action.x, action.y) then
+            if not SaveManager.is_item_unlocked("corn_scallion") then
+                gui.set_text(self.status_text, "Chén Mỡ Hành chưa mở khóa! Hãy mua Công thức ở cuối ca nhé.")
+            else
+                local applied_slot = GrillState.apply_scallion_to_first_valid_corn()
+                if applied_slot then
+                    safe_audio("play_sizzle", true)
+                    gui.set_text(self.status_text, "Đã quết mỡ hành thơm phức lên Bắp ở Ô số " .. applied_slot .. "!")
+                    gui.set_scale(self.bowl_scallion, vmath.vector3(1.15, 1.15, 1))
+                    gui.animate(self.bowl_scallion, gui.PROP_SCALE, vmath.vector3(1, 1, 1), gui.EASING_OUTBACK, 0.25)
+                else
+                    gui.set_text(self.status_text, "Cần có Bắp Nếp đang nướng ở Mặt B trên vỉ mới quết mỡ hành được!")
+                end
+            end
+            return true
+        end
+
+        -- 3. Click Khay Giữ Ấm
+        if gui.pick_node(self.warming_tray, action.x, action.y) and self.warming_item then
+            try_serve_or_store(self, self.warming_item, true)
+            return true
+        end
+
+        -- 4. Click vào các Ô nướng đã mở khóa
+        for i = 1, GrillState.grill.max_slots do
+            if gui.pick_node(self.slot_nodes[i], action.x, action.y) then
+                local res = GrillState.interact_slot(i)
+                if res then
+                    if res.action == "FLIPPED" then
+                        safe_audio("play_sizzle", res.grade_a == "PERFECT")
+                        gui.set_text(self.status_text, "Ô " .. i .. ": Đã lật sang Mặt B! (Mặt A: " .. res.grade_a .. ")")
+                        gui.set_scale(self.slot_nodes[i], vmath.vector3(1.15, 1.15, 1))
+                        gui.animate(self.slot_nodes[i], gui.PROP_SCALE, vmath.vector3(1, 1, 1), gui.EASING_OUTBACK, 0.25)
+                    elseif res.action == "HARVESTED" then
+                        try_serve_or_store(self, res.product, false)
+                    end
+                end
+                return true
+            end
+        end
+    end
+end
